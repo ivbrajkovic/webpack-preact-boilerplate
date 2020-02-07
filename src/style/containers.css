@@ -1,0 +1,38 @@
+/*=============================================
+=            Containers            =
+=============================================*/
+
+.container {
+  width: 100%;
+  padding-right: 1rem;
+  padding-left: 1rem;
+  margin-right: auto;
+  margin-left: auto;
+  /* min-width: 90%; */
+  /* max-width: 1024px; */
+}
+
+.content-center {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/*=====  End of Containers  ======*/
+
+/*=============================================
+=            Media query            =
+=============================================*/
+
+@media (min-width: 600px) {
+  /* .container {
+    max-width: 540px;
+  } */
+
+  .container {
+    max-width: 90%;
+  }
+}
+
+/*=====  End of Media query  ======*/

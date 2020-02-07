@@ -1,0 +1,15 @@
+@import './variables.css';
+@import './reset.css';
+@import './general.css';
+@import './containers.css';
+@import './navbar.css';
+@import './footer.css';
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
