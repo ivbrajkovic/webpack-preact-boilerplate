@@ -1,105 +1,159 @@
-const { resolve } = require("path");
+// Webpack module
 
-const TerserJSPlugin = require("terser-webpack-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
-  .BundleAnalyzerPlugin;
+const { resolve, join } = require('path');
+// const webpack = require('webpack');
+
+/********************************************************
+ * Main path entryes
+ */
+const distDir = resolve(__dirname, 'dist');
+const baseDir = resolve(__dirname, 'src');
+const vendorDir = resolve(baseDir, 'vendor');
+const srcDir = resolve(baseDir, '');
+const entryFiles = {
+  main: resolve(baseDir, 'app.js'),
+  fa: resolve(vendorDir, 'fa.js')
+};
+const templateHtml = resolve(baseDir, 'template.html');
+const entryHtml = join('.', 'index.html'); // ATTENTION
 
 module.exports = env => {
-  const { NODE_ENV = "development", analyze = false, devtools = "eval" } =
-    env || {};
-
-  /**
-   * Envoirement mode
+  /********************************************************
+   * Variables
    */
-  const devMode = NODE_ENV === "development";
+  const mode = env.mode === 'production' ? 'production' : 'development';
+  const production = env.mode === 'production';
+  const development = env.mode === 'development';
+  const devtools =
+    // env.devtools || (development ? 'eval-source-map' : 'source-map');
+    env.devtools || (development ? 'eval-cheap-module-source-map' : false);
+  const analyze = env.analyze || false;
 
-  console.log("Mode:", NODE_ENV);
-  console.log("Devtools:", (devMode && devtools) || false);
-  console.log("Boundle analyze:", analyze);
-
-  /**
-   * Minimizer
+  /********************************************************
+   * Log variables
    */
-  const minimizer = devMode
-    ? []
-    : [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})];
+  console.log('mode:', mode);
+  console.log('analyze:', analyze);
+  console.log('devtools:', devtools);
 
-  /**
-   * Plugins
+  /********************************************************
+   * Plugin array
    */
-  const plugins = [
-    new HtmlWebpackPlugin({
-      template: "./src/index.html",
-      filename: "./index.html",
-      minify: devMode
-        ? {}
-        : {
-            removeAttributeQuotes: true,
-            collapseWhitespace: true,
-            removeComments: true
-          }
-    })
-  ];
-  !devMode && plugins.unshift(new CleanWebpackPlugin());
-  !devMode &&
+  const plugins = [];
+  if (production) {
+    /********************************************************
+     * Production plugins
+     */
     plugins.push(
-      new MiniCssExtractPlugin({
-        // Options similar to the same options in webpackOptions.output
-        // both options are optional
-        // filename: "[name].[contenthash].css",
-        filename: "style.[contenthash].css",
-        chunkFilename: "[id].[contenthash].css"
+      // Clean dist folder
+      new (require('clean-webpack-plugin').CleanWebpackPlugin)(),
+      // Generate html file
+      new (require('html-webpack-plugin'))({
+        template: templateHtml,
+        filename: entryHtml, // ATTENTION
+        minify: {
+          removeAttributeQuotes: true,
+          collapseWhitespace: true,
+          removeComments: true
+        }
+      }),
+      // Extract CSS
+      new (require('mini-css-extract-plugin'))({
+        filename: 'style.[contenthash].css',
+        chunkFilename: '[id].[contenthash].css'
       })
+      // Copy asset to dist
+      // new CopyWebpackPlugin([
+      //   {
+      //     from: path.resolve(__dirname, '../src/assets/'),
+      //     to: path.resolve(__dirname, '../dist/assets/')
+      //   }
+      // ])
     );
-  analyze && plugins.push(new BundleAnalyzerPlugin());
+  } else {
+    /********************************************************
+     * Development plugins
+     */
+    plugins.push(
+      // Hot module reload
+      // new webpack.HotModuleReplacementPlugin(),
+      // Generate html
+      new (require('html-webpack-plugin'))({
+        template: templateHtml,
+        filename: entryHtml // ATTENTION
+      })
+      // Clear console on compile
+      // new (require('clean-terminal-webpack-plugin'))({
+      //   // onlyInWatchMode: false,
+      //   skipFirstRun: true,
+      //   beforeCompile: true
+      // })
+    );
+  }
 
-  /**
-   * Autoprefixer
+  /********************************************************
+   * Bundle analyzer plugins
    */
-  const autoprefixer = {
-    loader: "postcss-loader",
-    options: {
-      ident: "postcss",
-      plugins: [require("autoprefixer")]
-    }
-  };
+  if (analyze) {
+    plugins.push(
+      new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)({
+        analyzerMode: 'static',
+        reportFilename: './report.html'
+        //openAnalyzer: false
+      })
+      // new (require('webpack-visualizer-plugin'))()
+    );
+  }
 
+  /********************************************************
+   * Return configuration object
+   */
   return {
-    mode: devMode ? "development" : "production",
+    // Do not continue build if any errors
+    // bail: true,
 
-    entry: {
-      main: "./src/app.js",
-      fa: "./src/vendor/fa.js"
-    },
+    // webpack 4 - optimization auto
+    mode: mode,
+
+    entry: entryFiles,
+    // entry: {
+    //   main: './src/app.js',
+    //   fa: './src/vendor/fa.js'
+    // },
 
     output: {
-      filename: devMode ? "[name].bundle.js" : "[name].[contentHash].js",
-      path: resolve(__dirname, "dist")
+      filename: development ? '[name].bundle.js' : '[name].[contentHash].js',
+      path: distDir // ATTENTION
     },
 
-    devtool: (devMode && devtools) || false,
+    devtool: devtools,
 
     optimization: {
       usedExports: true,
-      minimizer: minimizer,
+      minimizer: development
+        ? []
+        : [
+            new (require('terser-webpack-plugin'))(),
+            new (require('optimize-css-assets-webpack-plugin'))()
+          ],
       splitChunks: {
         cacheGroups: {
           react: {
             test: /[\\/]node_modules[\\/]((react).*)[\\/]/,
-            name: "react",
-            chunks: "all"
+            name: 'react',
+            chunks: 'all'
           },
           commons: {
             test: /[\\/]node_modules[\\/]((?!react).*)[\\/]/,
-            name: "common",
-            chunks: "all"
+            name: 'common',
+            chunks: 'all'
           }
         }
       }
+    },
+
+    performance: {
+      hints: production ? 'warning' : false
     },
 
     plugins: plugins,
@@ -108,50 +162,75 @@ module.exports = env => {
       rules: [
         {
           test: /\.(html)$/,
-          exclude: /node_modules/,
-          use: ["html-loader"]
+          use: 'html-loader',
+          include: srcDir,
+          exclude: /node_modules/
         },
         {
           test: /\.(js|jsx)$/,
-          exclude: /node_modules/,
-          include: resolve(__dirname, "src"),
-          use: [
-            {
-              loader: "babel-loader",
-              options: {
-                babelrc: true
-              }
-            }
-          ]
+          use: 'babel-loader',
+          include: srcDir,
+          exclude: /node_modules/
         },
         {
           test: /\.(sa|sc|c)ss$/i,
           // exclude: /node_modules/,
           use: [
-            devMode ? "style-loader" : MiniCssExtractPlugin.loader,
-            "css-loader",
-            autoprefixer
+            development
+              ? 'style-loader'
+              : require('mini-css-extract-plugin').loader,
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                ident: 'postcss',
+                plugins: [require('autoprefixer')]
+              }
+            }
           ]
         },
         {
           test: /\.(svg|png|jpe?g|gif)$/i,
           exclude: /node_modules/,
           use: {
-            loader: "file-loader",
+            loader: 'file-loader',
             options: {
-              name: "[name].[hash].[ext]",
-              outputPath: "imgs"
+              name: '[name].[hash].[ext]',
+              outputPath: 'imgs'
             }
           }
         }
       ]
     },
 
+    stats: { colors: true },
+
+    devServer: {
+      // contentBase: join('.', 'dist'),
+      // hot: !production,
+      // hotOnly: !production,
+      historyApiFallback: true,
+      // port: port,
+      compress: production,
+      inline: !production,
+      stats: {
+        assets: true,
+        children: false,
+        chunks: false,
+        hash: true,
+        modules: false,
+        publicPath: false,
+        timings: true,
+        version: false,
+        warnings: true
+      }
+    },
+
     resolve: {
       alias: {
-        react: "preact/compat",
-        "react-dom/test-utils": "preact/test-utils",
-        "react-dom": "preact/compat"
+        react: 'preact/compat',
+        'react-dom/test-utils': 'preact/test-utils',
+        'react-dom': 'preact/compat'
         // Must be below test-utils
       }
     }
