@@ -2,9 +2,10 @@
 
 # npm i -D @babel/core @babel/preset-env @babel/preset-react autoprefixer babel-loader clean-webpack-plugin css-loader file-loader gh-pages html-loader html-webpack-plugin mini-css-extract-plugin optimize-css-assets-webpack-plugin postcss-loader style-loader webpack webpack-bundle-analyzer webpack-cli webpack-dev-server
 
+# npm i -D @fortawesome/fontawesome-svg-core @fortawesome/free-brands-svg-icons @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons 
+
 # npm i @babel/polyfill preact
 
-@fortawesome/fontawesome-svg-core @fortawesome/free-brands-svg-icons @fortawesome/free-regular-svg-icons @fortawesome/free-solid-svg-icons 
 dist
 node_modules
 *_old*
