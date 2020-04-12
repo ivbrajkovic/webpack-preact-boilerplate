@@ -160,18 +160,23 @@ module.exports = env => {
 
     module: {
       rules: [
+        // HTML loaders
         {
           test: /\.(html)$/,
           use: 'html-loader',
           include: srcDir,
           exclude: /node_modules/
         },
+
+        // JSX loaders
         {
           test: /\.(js|jsx)$/,
           use: 'babel-loader',
           include: srcDir,
           exclude: /node_modules/
         },
+
+        // Style loaders
         {
           test: /\.(sa|sc|c)ss$/i,
           // exclude: /node_modules/,
@@ -179,7 +184,22 @@ module.exports = env => {
             development
               ? 'style-loader'
               : require('mini-css-extract-plugin').loader,
-            'css-loader',
+
+            //'css-loader', // w/o CSS modules
+
+            // CSS modules
+            {
+              loader: 'css-loader',
+              options: {
+                modules: {
+                  localIdentName: '[local]__[hash:base64:5]'
+                },
+                importLoaders: 1,
+                sourceMap: true
+              }
+            },
+
+            // Autoprefixer
             {
               loader: 'postcss-loader',
               options: {
@@ -189,6 +209,8 @@ module.exports = env => {
             }
           ]
         },
+
+        // File loader
         {
           test: /\.(svg|png|jpe?g|gif)$/i,
           exclude: /node_modules/,
